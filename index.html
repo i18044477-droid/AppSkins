@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>AppSkins Upgrade</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            background-color: #0e121a;
+            color: #ffffff;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 20px;
+            overflow: hidden;
+        }
+        h1 { font-size: 24px; margin-bottom: 5px; color: #ff9900; text-shadow: 0 0 10px rgba(255,153,0,0.3); }
+        .balance { font-size: 16px; color: #8a96a3; margin-bottom: 30px; }
+        .balance span { color: #28a745; font-weight: bold; }
+        
+        /* Контейнер рулетки */
+        .roulette-wrapper {
+            position: relative;
+            width: 280px;
+            height: 280px;
+            margin-bottom: 40px;
+        }
+        /* Указатель выигрышного сектора */
+        .pointer {
+            position: absolute;
+            top: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 15px solid transparent;
+            border-right: 15px solid transparent;
+            border-top: 25px solid #ff9900;
+            z-index: 10;
+            filter: drop-shadow(0px 4px 8px rgba(0,0,0,0.5));
+        }
+        /* Само крутящееся колесо */
+        .wheel {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            border: 8px solid #1a2230;
+            background: conic-gradient(
+                #232d3f 0deg 45deg, #161f2c 45deg 90deg,
+                #232d3f 90deg 135deg, #161f2c 135deg 180deg,
+                #232d3f 180deg 225deg, #161f2c 225deg 270deg,
+                #232d3f 270deg 315deg, #161f2c 315deg 360deg
+            );
+            box-shadow: 0 0 30px rgba(0,0,0,0.6), inset 0 0 20px rgba(0,0,0,0.6);
+            transition: transform 4s cubic-bezier(0.1, 0.8, 0.1, 1);
+        }
+        .wheel-inner {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 60px;
+            height: 60px;
+            background: #0e121a;
+            border: 4px solid #ff9900;
+            border-radius: 50%;
+            box-shadow: 0 0 15px rgba(255,153,0,0.4);
+        }
+        
+        /* Кнопка апгрейда */
+        .btn-upgrade {
+            background: linear-gradient(135deg, #ff9900 0%, #cc7a00 100%);
+            color: #undefined;
+            color: white;
+            border: none;
+            padding: 16px 45px;
+            font-size: 18px;
+            font-weight: bold;
+            border-radius: 12px;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(255, 153, 0, 0.3);
+            transition: all 0.2s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .btn-upgrade:active { transform: scale(0.96); box-shadow: 0 2px 8px rgba(255, 153, 0, 0.2); }
+        .btn-upgrade:disabled { background: #2c3749; color: #64748b; box-shadow: none; cursor: not-allowed; }
+        
+        /* Результат */
+        .result-popup {
+            margin-top: 20px;
+            font-size: 18px;
+            font-weight: bold;
+            height: 24px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .success { color: #28a745; text-shadow: 0 0 10px rgba(40,167,69,0.4); }
+        .fail { color: #dc3545; text-shadow: 0 0 10px rgba(220,53,69,0.4); }
+    </style>
+</head>
+<body>
+
+    <h1>AppSkins Upgrade 📦</h1>
+    <div class="balance">Ваш баланс: <span id="balance-val">500</span> монет</div>
+
+    <div class="roulette-wrapper">
+        <div class="pointer"></div>
+        <div class="wheel" id="wheel"></div>
+        <div class="wheel-inner"></div>
+    </div>
+
+    <button class="btn-upgrade" id="upgrade-btn" onclick="startUpgrade()">Апгрейд!</button>
+    <div class="result-popup" id="result-text"></div>
+
+    <script>
+        let currentRotation = 0;
+        let isSpinning = false;
+        let balance = 500;
+
+        function startUpgrade() {
+            if (isSpinning || balance < 50) return;
+
+            isSpinning = true;
+            document.getElementById('upgrade-btn').disabled = true;
+            document.getElementById('result-text').style.opacity = '0';
+
+            // Генерируем случайный исход (60% шанс неудачи, 40% выигрыша для примера)
+            const isWin = Math.random() < 0.4;
+            
+            // Расчет случайного угла остановки колеса
+            // Сектора выигрыша/проигрыша чередуются каждые 45 градусов
+            const baseSpins = 5 * 360; // 5 полных оборотов для эффекта кручения
+            const targetSectorDegrees = isWin ? 22 : 67; // Углы попадания в разные цвета сектора
+            const randomOffset = Math.floor(Math.random() * 15) - 7; // Небольшой разброс внутри сектора
+            
+            currentRotation += baseSpins + (360 - (currentRotation % 360)) + targetSectorDegrees + randomOffset;
+            
+            const wheel = document.getElementById('wheel');
+            wheel.style.transform = `rotate(${currentRotation}deg)`;
+
+            // Ждем окончания анимации (4 секунды)
+            setTimeout(() => {
+                const resultText = document.getElementById('result-text');
+                const balanceVal = document.getElementById('balance-val');
+                
+                if (isWin) {
+                    balance += 150;
+                    resultText.innerHTML = "<span class='success'>🔥 УСПЕХ! Скин улучшен!</span>";
+                } else {
+                    balance -= 50;
+                    resultText.innerHTML = "<span class='fail'>❌ НЕУДАЧА! Скин сгорел</span>";
+                }
+                
+                balanceVal.textContent = balance;
+                resultText.style.opacity = '1';
+                isSpinning = false;
+                
+                if (balance >= 50) {
+                    document.getElementById('upgrade-btn').disabled = false;
+                } else {
+                    resultText.innerHTML = "<span class='fail'>У вас закончились монеты!</span>";
+                }
+            }, 4000);
+        }
+    </script>
+</body>
+</html>
